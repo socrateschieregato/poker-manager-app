@@ -1,6 +1,8 @@
 import { RankingTable } from "@/components/ranking-table";
+import { TournamentHistory } from "@/components/tournament-history";
 import { getSeasonRanking } from "@/lib/queries/rankings";
 import { getSeasons } from "@/lib/queries/seasons";
+import { getRecentTournamentsWithResults } from "@/lib/queries/tournaments";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -14,10 +16,14 @@ export default async function RankingPage({ searchParams }: Props) {
   const seasons = await getSeasons();
   const selectedSeasonId = params.season || seasons.find((s) => s.is_active)?.id || seasons[0]?.id;
   const selectedSeason = seasons.find((s) => s.id === selectedSeasonId);
-  const ranking = selectedSeasonId ? await getSeasonRanking(selectedSeasonId) : [];
+
+  const [ranking, recentTournaments] = await Promise.all([
+    selectedSeasonId ? getSeasonRanking(selectedSeasonId) : Promise.resolve([]),
+    selectedSeasonId ? getRecentTournamentsWithResults(selectedSeasonId, 5) : Promise.resolve([]),
+  ]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Ranking por Temporada</h1>
         <Link href="/" className="text-sm text-primary hover:underline">
@@ -50,6 +56,8 @@ export default async function RankingPage({ searchParams }: Props) {
             ranking={ranking}
             title={`Classificação Geral — ${selectedSeason?.name ?? ""}`}
           />
+
+          <TournamentHistory tournaments={recentTournaments} />
         </>
       )}
     </div>

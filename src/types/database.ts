@@ -35,6 +35,10 @@ export interface Result {
   tournament?: Tournament;
 }
 
+export interface TournamentWithResults extends Tournament {
+  results: Result[];
+}
+
 export interface RankingEntry {
   player_id: string;
   player_name: string;

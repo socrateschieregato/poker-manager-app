@@ -14,6 +14,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
               Ranking
             </Link>
+            <Link href="/ranking" className="text-muted-foreground hover:text-foreground transition-colors">
+              Temporadas
+            </Link>
             <Link href="/admin/login" className="text-muted-foreground hover:text-foreground transition-colors">
               Admin
             </Link>

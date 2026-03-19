@@ -217,7 +217,9 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
                             onValueChange={(v) => updateRow(row.key, "player_id", v)}
                           >
                             <SelectTrigger className="bg-input border-border">
-                              <SelectValue placeholder="Selecionar jogador" />
+                              <SelectValue placeholder="Selecionar jogador">
+                                {players.find((p) => p.id === row.player_id)?.name}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent className="bg-card border-border">
                               {players
@@ -302,7 +304,9 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
                         onValueChange={(v) => updateRow(row.key, "player_id", v)}
                       >
                         <SelectTrigger className="bg-input border-border">
-                          <SelectValue placeholder="Selecionar jogador" />
+                          <SelectValue placeholder="Selecionar jogador">
+                            {players.find((p) => p.id === row.player_id)?.name}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent className="bg-card border-border">
                           {players

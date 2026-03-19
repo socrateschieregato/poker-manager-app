@@ -153,7 +153,12 @@ export default function TournamentsPage() {
                 <Label>Temporada</Label>
                 <Select value={selectedSeasonId} onValueChange={(v) => setSelectedSeasonId(v ?? "")}>
                   <SelectTrigger className="bg-input border-border">
-                    <SelectValue placeholder="Selecione a temporada" />
+                    <SelectValue placeholder="Selecione a temporada">
+                      {(() => {
+                        const s = seasons.find((s) => s.id === selectedSeasonId);
+                        return s ? `${s.name}${s.is_active ? " (Ativa)" : ""}` : undefined;
+                      })()}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     {seasons.map((season) => (
