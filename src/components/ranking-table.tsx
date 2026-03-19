@@ -1,0 +1,141 @@
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { PositionBadge } from "@/components/position-badge";
+import { formatCurrency, formatPoints } from "@/lib/utils";
+import type { RankingEntry } from "@/types/database";
+
+interface RankingTableProps {
+  ranking: RankingEntry[];
+  title?: string;
+}
+
+export function RankingTable({ ranking, title = "Classificação Geral" }: RankingTableProps) {
+  const totalAccumulated = ranking.reduce((sum, r) => sum + Number(r.accumulated_prize), 0);
+
+  return (
+    <div className="w-full rounded-xl border border-border bg-card overflow-hidden">
+      <div className="px-6 py-4 border-b border-border">
+        <h2 className="text-xl font-semibold italic tracking-wide">{title}</h2>
+      </div>
+
+      {/* Desktop */}
+      <div className="hidden md:block overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="w-16 text-xs uppercase tracking-wider text-muted-foreground">Pos.</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">Nome</TableHead>
+              <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">Pontos Totais</TableHead>
+              <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">Pontos (Anterior)</TableHead>
+              <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">Presenças</TableHead>
+              <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">Vitórias</TableHead>
+              <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">Pontos no Dia</TableHead>
+              <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground">Valor Acumulado</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {ranking.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                  Nenhum resultado cadastrado ainda.
+                </TableCell>
+              </TableRow>
+            )}
+            {ranking.map((entry, index) => (
+              <TableRow
+                key={entry.player_id}
+                className="border-border hover:bg-white/[0.02] transition-colors"
+              >
+                <TableCell>
+                  <PositionBadge position={index + 1} />
+                </TableCell>
+                <TableCell className="font-medium text-[#38BDF8]">
+                  {entry.player_name}
+                </TableCell>
+                <TableCell className="text-center font-bold text-lg">
+                  {entry.total_points}
+                </TableCell>
+                <TableCell className="text-center text-muted-foreground">
+                  {entry.previous_points}
+                </TableCell>
+                <TableCell className="text-center">
+                  {entry.attendances}
+                </TableCell>
+                <TableCell className="text-center font-semibold">
+                  {entry.victories}
+                </TableCell>
+                <TableCell className="text-center">
+                  <span className={Number(entry.points_today) > 0 ? "text-[#22C55E] font-medium" : "text-muted-foreground"}>
+                    {Number(entry.points_today) > 0 ? formatPoints(Number(entry.points_today)) : "0"}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right font-medium text-[#22C55E]">
+                  {formatCurrency(Number(entry.accumulated_prize))}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          {ranking.length > 0 && (
+            <TableFooter className="bg-card border-t border-border">
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={7} className="text-right font-bold uppercase tracking-wider text-sm">
+                  Total Acumulado:
+                </TableCell>
+                <TableCell className="text-right font-bold text-[#22C55E] text-lg">
+                  {formatCurrency(totalAccumulated)}
+                </TableCell>
+              </TableRow>
+            </TableFooter>
+          )}
+        </Table>
+      </div>
+
+      {/* Mobile */}
+      <div className="md:hidden divide-y divide-border">
+        {ranking.length === 0 && (
+          <div className="p-6 text-center text-muted-foreground">
+            Nenhum resultado cadastrado ainda.
+          </div>
+        )}
+        {ranking.map((entry, index) => (
+          <div key={entry.player_id} className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <PositionBadge position={index + 1} />
+                <span className="font-medium text-[#38BDF8]">{entry.player_name}</span>
+              </div>
+              <span className="text-xl font-bold">{entry.total_points} pts</span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm pl-6">
+              <div className="text-muted-foreground">Anterior:</div>
+              <div>{entry.previous_points}</div>
+              <div className="text-muted-foreground">Presenças:</div>
+              <div>{entry.attendances}</div>
+              <div className="text-muted-foreground">Vitórias:</div>
+              <div className="font-semibold">{entry.victories}</div>
+              <div className="text-muted-foreground">Pontos no dia:</div>
+              <div className={Number(entry.points_today) > 0 ? "text-[#22C55E] font-medium" : ""}>
+                {Number(entry.points_today) > 0 ? formatPoints(Number(entry.points_today)) : "0"}
+              </div>
+              <div className="text-muted-foreground">Valor acumulado:</div>
+              <div className="text-[#22C55E] font-medium">{formatCurrency(Number(entry.accumulated_prize))}</div>
+            </div>
+          </div>
+        ))}
+        {ranking.length > 0 && (
+          <div className="p-4 flex justify-between items-center">
+            <span className="font-bold uppercase tracking-wider text-sm">Total Acumulado:</span>
+            <span className="font-bold text-[#22C55E] text-lg">{formatCurrency(totalAccumulated)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
