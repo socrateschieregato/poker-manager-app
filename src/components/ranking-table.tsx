@@ -14,15 +14,22 @@ import type { RankingEntry } from "@/types/database";
 interface RankingTableProps {
   ranking: RankingEntry[];
   title?: string;
+  seasonPot?: number;
 }
 
-export function RankingTable({ ranking, title = "Classificação Geral" }: RankingTableProps) {
+export function RankingTable({ ranking, title = "Classificação Geral", seasonPot = 0 }: RankingTableProps) {
   const totalAccumulated = ranking.reduce((sum, r) => sum + Number(r.accumulated_prize), 0);
 
   return (
     <div className="w-full rounded-xl border border-border bg-card overflow-hidden">
-      <div className="px-6 py-4 border-b border-border">
+      <div className="px-6 py-4 border-b border-border flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-xl font-semibold italic tracking-wide">{title}</h2>
+        {seasonPot > 0 && (
+          <div className="flex items-center gap-2 rounded-lg bg-[#FACC15]/10 border border-[#FACC15]/30 px-4 py-1.5">
+            <span className="text-sm font-medium text-[#FACC15] uppercase tracking-wider">POT do Ranking:</span>
+            <span className="text-lg font-bold text-[#FACC15]">{formatCurrency(seasonPot)}</span>
+          </div>
+        )}
       </div>
 
       {/* Desktop */}
@@ -99,6 +106,12 @@ export function RankingTable({ ranking, title = "Classificação Geral" }: Ranki
 
       {/* Mobile */}
       <div className="md:hidden divide-y divide-border">
+        {seasonPot > 0 && (
+          <div className="p-4 flex justify-between items-center bg-[#FACC15]/5">
+            <span className="font-bold uppercase tracking-wider text-sm text-[#FACC15]">POT do Ranking:</span>
+            <span className="font-bold text-[#FACC15] text-lg">{formatCurrency(seasonPot)}</span>
+          </div>
+        )}
         {ranking.length === 0 && (
           <div className="p-6 text-center text-muted-foreground">
             Nenhum resultado cadastrado ainda.

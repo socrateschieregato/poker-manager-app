@@ -20,8 +20,16 @@ export interface Tournament {
   date: string;
   buy_in: number;
   prize_pool: number;
+  pot_contribution: number;
   created_at: string;
   season?: Season;
+}
+
+export interface TournamentPrize {
+  id: string;
+  tournament_id: string;
+  position: number;
+  amount: number;
 }
 
 export interface Result {

@@ -36,7 +36,13 @@ import { Plus, Pencil, Trash2, Trophy, Loader2, ClipboardList } from "lucide-rea
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
-import type { Tournament, Season } from "@/types/database";
+import type { Tournament, Season, TournamentPrize } from "@/types/database";
+
+interface PrizeRow {
+  key: string;
+  position: number;
+  amount: number;
+}
 
 export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState<(Tournament & { season?: Season })[]>([]);
@@ -46,6 +52,7 @@ export default function TournamentsPage() {
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>("");
   const [isPending, startTransition] = useTransition();
+  const [prizeRows, setPrizeRows] = useState<PrizeRow[]>([]);
 
   async function loadData() {
     const supabase = createClient();
@@ -65,9 +72,24 @@ export default function TournamentsPage() {
     loadData();
   }, []);
 
-  function handleEdit(tournament: Tournament) {
+  async function handleEdit(tournament: Tournament) {
     setEditingTournament(tournament);
     setSelectedSeasonId(tournament.season_id);
+
+    const supabase = createClient();
+    const { data: prizes } = await supabase
+      .from("tournament_prizes")
+      .select("*")
+      .eq("tournament_id", tournament.id)
+      .order("position");
+
+    setPrizeRows(
+      (prizes ?? []).map((p: TournamentPrize) => ({
+        key: crypto.randomUUID(),
+        position: p.position,
+        amount: Number(p.amount),
+      }))
+    );
     setDialogOpen(true);
   }
 
@@ -75,11 +97,33 @@ export default function TournamentsPage() {
     setEditingTournament(null);
     const activeSeason = seasons.find((s) => s.is_active);
     setSelectedSeasonId(activeSeason?.id ?? seasons[0]?.id ?? "");
+    setPrizeRows([]);
     setDialogOpen(true);
+  }
+
+  function addPrizeRow() {
+    const nextPosition = prizeRows.length + 1;
+    setPrizeRows([
+      ...prizeRows,
+      { key: crypto.randomUUID(), position: nextPosition, amount: 0 },
+    ]);
+  }
+
+  function removePrizeRow(key: string) {
+    const updated = prizeRows.filter((r) => r.key !== key);
+    setPrizeRows(updated.map((r, i) => ({ ...r, position: i + 1 })));
+  }
+
+  function updatePrizeRow(key: string, amount: number) {
+    setPrizeRows(prizeRows.map((r) => (r.key === key ? { ...r, amount } : r)));
   }
 
   async function handleSubmit(formData: FormData) {
     formData.set("season_id", selectedSeasonId);
+    formData.set(
+      "prizes",
+      JSON.stringify(prizeRows.map((r) => ({ position: r.position, amount: r.amount })))
+    );
 
     startTransition(async () => {
       const result = editingTournament
@@ -94,6 +138,7 @@ export default function TournamentsPage() {
       toast.success(editingTournament ? "Torneio atualizado!" : "Torneio criado!");
       setDialogOpen(false);
       setEditingTournament(null);
+      setPrizeRows([]);
       loadData();
     });
   }
@@ -131,7 +176,7 @@ export default function TournamentsPage() {
             <Plus className="h-4 w-4" />
             Novo Torneio
           </DialogTrigger>
-          <DialogContent className="bg-card border-border">
+          <DialogContent className="bg-card border-border max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingTournament ? "Editar Torneio" : "Novo Torneio"}
@@ -194,7 +239,7 @@ export default function TournamentsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="prize_pool">Premiação (R$)</Label>
+                  <Label htmlFor="prize_pool">Premiação Total (R$)</Label>
                   <Input
                     id="prize_pool"
                     name="prize_pool"
@@ -206,6 +251,64 @@ export default function TournamentsPage() {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="pot_contribution">Contribuição para o POT (R$)</Label>
+                <Input
+                  id="pot_contribution"
+                  name="pot_contribution"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={editingTournament?.pot_contribution ?? 0}
+                  className="bg-input border-border"
+                />
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Premiação por Posição</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addPrizeRow}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Adicionar
+                  </Button>
+                </div>
+                {prizeRows.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    Nenhum prêmio definido. Clique em &quot;Adicionar&quot; para configurar.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {prizeRows.map((row) => (
+                      <div key={row.key} className="flex items-center gap-2">
+                        <span className="text-sm font-medium w-8 text-center shrink-0">
+                          {row.position}º
+                        </span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={row.amount}
+                          onChange={(e) =>
+                            updatePrizeRow(row.key, parseFloat(e.target.value) || 0)
+                          }
+                          placeholder="Valor (R$)"
+                          className="bg-input border-border"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removePrizeRow(row.key)}
+                          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2">
                 <Button
                   type="button"
@@ -244,19 +347,20 @@ export default function TournamentsPage() {
               <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">Data</TableHead>
               <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">Buy-in</TableHead>
               <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">Premiação</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">POT</TableHead>
               <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground w-40">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : tournaments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   Nenhum torneio cadastrado.
                 </TableCell>
               </TableRow>
@@ -273,6 +377,9 @@ export default function TournamentsPage() {
                   <TableCell>{formatCurrency(tournament.buy_in)}</TableCell>
                   <TableCell className="text-[#22C55E]">
                     {formatCurrency(tournament.prize_pool)}
+                  </TableCell>
+                  <TableCell className="text-[#FACC15]">
+                    {formatCurrency(Number(tournament.pot_contribution))}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">

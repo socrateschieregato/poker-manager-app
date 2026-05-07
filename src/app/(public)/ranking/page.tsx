@@ -1,6 +1,6 @@
 import { RankingTable } from "@/components/ranking-table";
 import { TournamentHistory } from "@/components/tournament-history";
-import { getSeasonRanking } from "@/lib/queries/rankings";
+import { getSeasonRanking, getSeasonPot } from "@/lib/queries/rankings";
 import { getSeasons } from "@/lib/queries/seasons";
 import { getRecentTournamentsWithResults } from "@/lib/queries/tournaments";
 import Link from "next/link";
@@ -17,9 +17,10 @@ export default async function RankingPage({ searchParams }: Props) {
   const selectedSeasonId = params.season || seasons.find((s) => s.is_active)?.id || seasons[0]?.id;
   const selectedSeason = seasons.find((s) => s.id === selectedSeasonId);
 
-  const [ranking, recentTournaments] = await Promise.all([
+  const [ranking, recentTournaments, seasonPot] = await Promise.all([
     selectedSeasonId ? getSeasonRanking(selectedSeasonId) : Promise.resolve([]),
     selectedSeasonId ? getRecentTournamentsWithResults(selectedSeasonId, 5) : Promise.resolve([]),
+    selectedSeasonId ? getSeasonPot(selectedSeasonId) : Promise.resolve(0),
   ]);
 
   return (
@@ -55,6 +56,7 @@ export default async function RankingPage({ searchParams }: Props) {
           <RankingTable
             ranking={ranking}
             title={`Classificação Geral — ${selectedSeason?.name ?? ""}`}
+            seasonPot={seasonPot}
           />
 
           <TournamentHistory tournaments={recentTournaments} />

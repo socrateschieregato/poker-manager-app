@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, use } from "react";
+import { useEffect, useState, useTransition, use, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { saveResults } from "@/lib/actions/results";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, Save, Loader2, ArrowLeft, Trophy } from "lucide-react";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
-import type { Player, Tournament, Result } from "@/types/database";
+import type { Player, Tournament, Result, TournamentPrize } from "@/types/database";
 
 interface ResultRow {
   key: string;
@@ -40,14 +41,20 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [rows, setRows] = useState<ResultRow[]>([]);
+  const [prizesMap, setPrizesMap] = useState<Map<number, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+
+  const getPrizeForPosition = useCallback(
+    (position: number) => prizesMap.get(position) ?? 0,
+    [prizesMap]
+  );
 
   useEffect(() => {
     async function load() {
       const supabase = createClient();
 
-      const [tournamentRes, playersRes, resultsRes] = await Promise.all([
+      const [tournamentRes, playersRes, resultsRes, prizesRes] = await Promise.all([
         supabase.from("tournaments").select("*, season:seasons(*)").eq("id", tournamentId).single(),
         supabase.from("players").select("*").order("name"),
         supabase
@@ -55,10 +62,21 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
           .select("*, player:players(*)")
           .eq("tournament_id", tournamentId)
           .order("position"),
+        supabase
+          .from("tournament_prizes")
+          .select("*")
+          .eq("tournament_id", tournamentId)
+          .order("position"),
       ]);
 
       setTournament(tournamentRes.data);
       setPlayers(playersRes.data ?? []);
+
+      const prizeMap = new Map<number, number>();
+      (prizesRes.data ?? []).forEach((p: TournamentPrize) => {
+        prizeMap.set(p.position, Number(p.amount));
+      });
+      setPrizesMap(prizeMap);
 
       if (resultsRes.data && resultsRes.data.length > 0) {
         setRows(
@@ -67,7 +85,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
             player_id: r.player_id,
             position: r.position,
             points: r.points,
-            prize_won: r.prize_won,
+            prize_won: Number(r.prize_won),
           }))
         );
       }
@@ -85,7 +103,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         player_id: "",
         position: nextPosition,
         points: 0,
-        prize_won: 0,
+        prize_won: getPrizeForPosition(nextPosition),
       },
     ]);
   }
@@ -93,7 +111,11 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
   function removeRow(key: string) {
     const updated = rows.filter((r) => r.key !== key);
     setRows(
-      updated.map((r, i) => ({ ...r, position: i + 1 }))
+      updated.map((r, i) => ({
+        ...r,
+        position: i + 1,
+        prize_won: r.prize_won,
+      }))
     );
   }
 
@@ -176,6 +198,31 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
           </p>
         </div>
       </div>
+
+      {prizesMap.size > 0 && (
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Premiação Definida
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {Array.from(prizesMap.entries())
+                .sort(([a], [b]) => a - b)
+                .map(([position, amount]) => (
+                  <div
+                    key={position}
+                    className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm"
+                  >
+                    <span className="font-bold">{position}º</span>
+                    <span className="text-[#22C55E]">{formatCurrency(amount)}</span>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-border bg-card">
         <CardHeader className="flex flex-row items-center justify-between">
