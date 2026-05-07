@@ -14,6 +14,8 @@ import { Calendar, ChevronRight } from "lucide-react";
 
 interface TournamentHistoryProps {
   tournaments: TournamentWithResults[];
+  /** Máximo de classificados exibidos por torneio na prévia (padrão: 9). */
+  maxResultsPerTournament?: number;
 }
 
 function formatDate(dateStr: string): string {
@@ -21,7 +23,10 @@ function formatDate(dateStr: string): string {
   return `${day}/${month}/${year}`;
 }
 
-export function TournamentHistory({ tournaments }: TournamentHistoryProps) {
+export function TournamentHistory({
+  tournaments,
+  maxResultsPerTournament = 9,
+}: TournamentHistoryProps) {
   if (tournaments.length === 0) {
     return null;
   }
@@ -33,7 +38,10 @@ export function TournamentHistory({ tournaments }: TournamentHistoryProps) {
       </h2>
 
       <div className="space-y-4">
-        {tournaments.map((tournament) => (
+        {tournaments.map((tournament) => {
+          const previewResults = tournament.results.slice(0, maxResultsPerTournament);
+
+          return (
           <Link
             key={tournament.id}
             href={`/ranking/torneio/${tournament.id}`}
@@ -73,7 +81,7 @@ export function TournamentHistory({ tournaments }: TournamentHistoryProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tournament.results.map((result) => (
+                    {previewResults.map((result) => (
                       <TableRow
                         key={result.id}
                         className="border-border hover:bg-white/[0.02] transition-colors"
@@ -100,7 +108,7 @@ export function TournamentHistory({ tournaments }: TournamentHistoryProps) {
 
               {/* Mobile */}
               <div className="md:hidden divide-y divide-border">
-                {tournament.results.map((result) => (
+                {previewResults.map((result) => (
                   <div
                     key={result.id}
                     className="px-4 py-2.5 flex items-center justify-between"
@@ -124,7 +132,8 @@ export function TournamentHistory({ tournaments }: TournamentHistoryProps) {
               </div>
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

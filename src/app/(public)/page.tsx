@@ -41,7 +41,11 @@ export default async function HomePage() {
         ranking={ranking}
         seasonPot={seasonPot}
         previewLimit={9}
-        fullRankingHref={seasonId ? `/ranking?season=${seasonId}` : "/ranking"}
+        fullRankingHref={
+          seasonId
+            ? `/ranking/classificacao?season=${seasonId}`
+            : "/ranking/classificacao"
+        }
       />
 
       <TournamentHistory tournaments={recentTournaments} />
