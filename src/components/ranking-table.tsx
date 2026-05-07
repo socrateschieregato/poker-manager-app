@@ -2,7 +2,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -18,8 +17,6 @@ interface RankingTableProps {
 }
 
 export function RankingTable({ ranking, title = "Classificação Geral", seasonPot = 0 }: RankingTableProps) {
-  const totalAccumulated = ranking.reduce((sum, r) => sum + Number(r.accumulated_prize), 0);
-
   return (
     <div className="w-full rounded-xl border border-border bg-card overflow-hidden">
       <div className="px-6 py-4 border-b border-border flex items-center justify-between flex-wrap gap-2">
@@ -44,13 +41,12 @@ export function RankingTable({ ranking, title = "Classificação Geral", seasonP
               <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">Presenças</TableHead>
               <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">Vitórias</TableHead>
               <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">Pontos no Dia</TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground">Valor Acumulado</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {ranking.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   Nenhum resultado cadastrado ainda.
                 </TableCell>
               </TableRow>
@@ -83,24 +79,9 @@ export function RankingTable({ ranking, title = "Classificação Geral", seasonP
                     {Number(entry.points_today) > 0 ? formatPoints(Number(entry.points_today)) : "0"}
                   </span>
                 </TableCell>
-                <TableCell className="text-right font-medium text-[#22C55E]">
-                  {formatCurrency(Number(entry.accumulated_prize))}
-                </TableCell>
               </TableRow>
             ))}
           </TableBody>
-          {ranking.length > 0 && (
-            <TableFooter className="bg-card border-t border-border">
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="text-right font-bold uppercase tracking-wider text-sm">
-                  Total Acumulado:
-                </TableCell>
-                <TableCell className="text-right font-bold text-[#22C55E] text-lg">
-                  {formatCurrency(totalAccumulated)}
-                </TableCell>
-              </TableRow>
-            </TableFooter>
-          )}
         </Table>
       </div>
 
@@ -137,17 +118,9 @@ export function RankingTable({ ranking, title = "Classificação Geral", seasonP
               <div className={Number(entry.points_today) > 0 ? "text-[#22C55E] font-medium" : ""}>
                 {Number(entry.points_today) > 0 ? formatPoints(Number(entry.points_today)) : "0"}
               </div>
-              <div className="text-muted-foreground">Valor acumulado:</div>
-              <div className="text-[#22C55E] font-medium">{formatCurrency(Number(entry.accumulated_prize))}</div>
             </div>
           </div>
         ))}
-        {ranking.length > 0 && (
-          <div className="p-4 flex justify-between items-center">
-            <span className="font-bold uppercase tracking-wider text-sm">Total Acumulado:</span>
-            <span className="font-bold text-[#22C55E] text-lg">{formatCurrency(totalAccumulated)}</span>
-          </div>
-        )}
       </div>
     </div>
   );
