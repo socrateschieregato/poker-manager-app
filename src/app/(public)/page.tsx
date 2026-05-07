@@ -8,7 +8,7 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const { ranking, seasonName, seasonPot } = await getActiveSeasonRanking();
+  const { ranking, seasonName, seasonPot, seasonId } = await getActiveSeasonRanking();
   const seasons = await getSeasons();
   const activeSeason = await getActiveSeason();
 
@@ -37,7 +37,12 @@ export default async function HomePage() {
         )}
       </div>
 
-      <RankingTable ranking={ranking} seasonPot={seasonPot} />
+      <RankingTable
+        ranking={ranking}
+        seasonPot={seasonPot}
+        previewLimit={9}
+        fullRankingHref={seasonId ? `/ranking?season=${seasonId}` : "/ranking"}
+      />
 
       <TournamentHistory tournaments={recentTournaments} />
     </div>

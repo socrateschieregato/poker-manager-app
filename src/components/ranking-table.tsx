@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -14,9 +15,26 @@ interface RankingTableProps {
   ranking: RankingEntry[];
   title?: string;
   seasonPot?: number;
+  /** Quando definido, exibe apenas os primeiros N participantes (ex.: prévia na home). */
+  previewLimit?: number;
+  /** URL da classificação completa (usada com `previewLimit` e botão "Ver mais"). */
+  fullRankingHref?: string;
 }
 
-export function RankingTable({ ranking, title = "Classificação Geral", seasonPot = 0 }: RankingTableProps) {
+export function RankingTable({
+  ranking,
+  title = "Classificação Geral",
+  seasonPot = 0,
+  previewLimit,
+  fullRankingHref,
+}: RankingTableProps) {
+  const displayedRanking =
+    previewLimit != null ? ranking.slice(0, previewLimit) : ranking;
+  const showSeeMore =
+    fullRankingHref != null &&
+    previewLimit != null &&
+    ranking.length > previewLimit;
+
   return (
     <div className="w-full rounded-xl border border-border bg-card overflow-hidden">
       <div className="px-6 py-4 border-b border-border flex items-center justify-between flex-wrap gap-2">
@@ -44,14 +62,14 @@ export function RankingTable({ ranking, title = "Classificação Geral", seasonP
             </TableRow>
           </TableHeader>
           <TableBody>
-            {ranking.length === 0 && (
+            {displayedRanking.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   Nenhum resultado cadastrado ainda.
                 </TableCell>
               </TableRow>
             )}
-            {ranking.map((entry, index) => (
+            {displayedRanking.map((entry, index) => (
               <TableRow
                 key={entry.player_id}
                 className="border-border hover:bg-white/[0.02] transition-colors"
@@ -93,12 +111,12 @@ export function RankingTable({ ranking, title = "Classificação Geral", seasonP
             <span className="font-bold text-[#FACC15] text-lg">{formatCurrency(seasonPot)}</span>
           </div>
         )}
-        {ranking.length === 0 && (
+        {displayedRanking.length === 0 && (
           <div className="p-6 text-center text-muted-foreground">
             Nenhum resultado cadastrado ainda.
           </div>
         )}
-        {ranking.map((entry, index) => (
+        {displayedRanking.map((entry, index) => (
           <div key={entry.player_id} className="p-4 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -122,6 +140,19 @@ export function RankingTable({ ranking, title = "Classificação Geral", seasonP
           </div>
         ))}
       </div>
+
+      {showSeeMore && (
+        <div className="px-6 py-4 border-t border-border flex justify-center">
+          <Link
+            href={fullRankingHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Ver mais
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
