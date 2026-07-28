@@ -38,6 +38,7 @@ export interface Result {
   player_id: string;
   position: number;
   points: number;
+  participation_points: number;
   prize_won: number;
   player?: Player;
   tournament?: Tournament;

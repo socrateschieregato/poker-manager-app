@@ -7,6 +7,7 @@ interface ResultInput {
   player_id: string;
   position: number;
   points: number;
+  participation_points: number;
   prize_won: number;
 }
 
@@ -27,6 +28,7 @@ export async function saveResults(tournamentId: string, results: ResultInput[]) 
     player_id: r.player_id,
     position: r.position,
     points: r.points,
+    participation_points: r.participation_points,
     prize_won: r.prize_won,
   }));
 

@@ -9,13 +9,16 @@ import {
 } from "@/components/ui/table";
 import { PositionBadge } from "@/components/position-badge";
 import { formatCurrency } from "@/lib/utils";
-import type { TournamentWithResults } from "@/types/database";
-import { Calendar, ChevronRight } from "lucide-react";
+import type { Result, TournamentWithResults } from "@/types/database";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TournamentHistoryProps {
   tournaments: TournamentWithResults[];
   /** Máximo de classificados exibidos por torneio na prévia (padrão: 9). */
   maxResultsPerTournament?: number;
+  page?: number;
+  totalPages?: number;
+  buildPageHref?: (page: number) => string;
 }
 
 function formatDate(dateStr: string): string {
@@ -23,13 +26,24 @@ function formatDate(dateStr: string): string {
   return `${day}/${month}/${year}`;
 }
 
+function resultTotal(result: Result): number {
+  return result.points + (result.participation_points ?? 0);
+}
+
 export function TournamentHistory({
   tournaments,
   maxResultsPerTournament = 9,
+  page = 1,
+  totalPages = 1,
+  buildPageHref,
 }: TournamentHistoryProps) {
   if (tournaments.length === 0) {
     return null;
   }
+
+  const showPagination = Boolean(buildPageHref) && totalPages > 1;
+  const hasPrev = page > 1;
+  const hasNext = page < totalPages;
 
   return (
     <div className="space-y-6">
@@ -73,7 +87,13 @@ export function TournamentHistory({
                         Jogador
                       </TableHead>
                       <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
-                        Pontos
+                        Pontuação
+                      </TableHead>
+                      <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
+                        Participação
+                      </TableHead>
+                      <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
+                        Total
                       </TableHead>
                       <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground">
                         Premiação
@@ -92,8 +112,14 @@ export function TournamentHistory({
                         <TableCell className="font-medium text-[#38BDF8]">
                           {result.player?.name ?? "—"}
                         </TableCell>
-                        <TableCell className="text-center font-bold">
+                        <TableCell className="text-center">
                           {result.points}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {result.participation_points ?? 0}
+                        </TableCell>
+                        <TableCell className="text-center font-bold">
+                          {resultTotal(result)}
                         </TableCell>
                         <TableCell className="text-right font-medium text-[#22C55E]">
                           {Number(result.prize_won) > 0
@@ -120,7 +146,7 @@ export function TournamentHistory({
                       </span>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
-                      <span className="font-bold">{result.points} pts</span>
+                      <span className="font-bold">{resultTotal(result)} pts</span>
                       {Number(result.prize_won) > 0 && (
                         <span className="text-[#22C55E] font-medium">
                           {formatCurrency(Number(result.prize_won))}
@@ -135,6 +161,44 @@ export function TournamentHistory({
           );
         })}
       </div>
+
+      {showPagination && buildPageHref && (
+        <div className="flex items-center justify-center gap-4 pt-2">
+          {hasPrev ? (
+            <Link
+              href={buildPageHref(page - 1)}
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Anterior
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground opacity-50">
+              <ChevronLeft className="h-4 w-4" />
+              Anterior
+            </span>
+          )}
+
+          <span className="text-sm text-muted-foreground">
+            Página {page} de {totalPages}
+          </span>
+
+          {hasNext ? (
+            <Link
+              href={buildPageHref(page + 1)}
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              Próxima
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground opacity-50">
+              Próxima
+              <ChevronRight className="h-4 w-4" />
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

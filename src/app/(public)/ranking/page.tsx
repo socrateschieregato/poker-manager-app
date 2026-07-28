@@ -2,13 +2,15 @@ import { RankingTable } from "@/components/ranking-table";
 import { TournamentHistory } from "@/components/tournament-history";
 import { getSeasonRanking, getSeasonPot } from "@/lib/queries/rankings";
 import { getSeasons } from "@/lib/queries/seasons";
-import { getRecentTournamentsWithResults } from "@/lib/queries/tournaments";
+import { getTournamentsWithResultsPage } from "@/lib/queries/tournaments";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 5;
+
 interface Props {
-  searchParams: Promise<{ season?: string }>;
+  searchParams: Promise<{ season?: string; page?: string }>;
 }
 
 export default async function RankingPage({ searchParams }: Props) {
@@ -16,12 +18,29 @@ export default async function RankingPage({ searchParams }: Props) {
   const seasons = await getSeasons();
   const selectedSeasonId = params.season || seasons.find((s) => s.is_active)?.id || seasons[0]?.id;
   const selectedSeason = seasons.find((s) => s.id === selectedSeasonId);
+  const requestedPage = Math.max(1, Number(params.page) || 1);
 
-  const [ranking, recentTournaments, seasonPot] = await Promise.all([
+  const [ranking, seasonPot, tournamentsPage] = await Promise.all([
     selectedSeasonId ? getSeasonRanking(selectedSeasonId) : Promise.resolve([]),
-    selectedSeasonId ? getRecentTournamentsWithResults(selectedSeasonId, 5) : Promise.resolve([]),
     selectedSeasonId ? getSeasonPot(selectedSeasonId) : Promise.resolve(0),
+    selectedSeasonId
+      ? getTournamentsWithResultsPage(selectedSeasonId, requestedPage, PAGE_SIZE)
+      : Promise.resolve({ tournaments: [], total: 0 }),
   ]);
+
+  let totalPages = Math.max(1, Math.ceil(tournamentsPage.total / PAGE_SIZE));
+  let page = Math.min(requestedPage, totalPages);
+  let tournaments = tournamentsPage.tournaments;
+
+  if (selectedSeasonId && page !== requestedPage) {
+    const clamped = await getTournamentsWithResultsPage(
+      selectedSeasonId,
+      page,
+      PAGE_SIZE
+    );
+    tournaments = clamped.tournaments;
+    totalPages = Math.max(1, Math.ceil(clamped.total / PAGE_SIZE));
+  }
 
   return (
     <div className="space-y-8">
@@ -59,7 +78,18 @@ export default async function RankingPage({ searchParams }: Props) {
             seasonPot={seasonPot}
           />
 
-          <TournamentHistory tournaments={recentTournaments} />
+          <TournamentHistory
+            tournaments={tournaments}
+            page={page}
+            totalPages={totalPages}
+            buildPageHref={(p) => {
+              const qs = new URLSearchParams();
+              if (selectedSeasonId) qs.set("season", selectedSeasonId);
+              if (p > 1) qs.set("page", String(p));
+              const query = qs.toString();
+              return query ? `/ranking?${query}` : "/ranking";
+            }}
+          />
         </>
       )}
     </div>

@@ -16,6 +16,10 @@ interface TournamentResultsTableProps {
   title?: string;
 }
 
+function resultTotal(result: Result): number {
+  return result.points + (result.participation_points ?? 0);
+}
+
 export function TournamentResultsTable({
   results,
   title = "Resultado do Torneio",
@@ -43,7 +47,13 @@ export function TournamentResultsTable({
                 Jogador
               </TableHead>
               <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
-                Pontos
+                Pontuação
+              </TableHead>
+              <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
+                Participação
+              </TableHead>
+              <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">
+                Total
               </TableHead>
               <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground">
                 Premiação
@@ -54,7 +64,7 @@ export function TournamentResultsTable({
             {results.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={6}
                   className="h-24 text-center text-muted-foreground"
                 >
                   Nenhum resultado cadastrado ainda.
@@ -72,8 +82,14 @@ export function TournamentResultsTable({
                 <TableCell className="font-medium text-[#38BDF8]">
                   {result.player?.name ?? "—"}
                 </TableCell>
-                <TableCell className="text-center font-bold text-lg">
+                <TableCell className="text-center">
                   {result.points}
+                </TableCell>
+                <TableCell className="text-center">
+                  {result.participation_points ?? 0}
+                </TableCell>
+                <TableCell className="text-center font-bold text-lg">
+                  {resultTotal(result)}
                 </TableCell>
                 <TableCell className="text-right font-medium text-[#22C55E]">
                   {Number(result.prize_won) > 0
@@ -87,7 +103,7 @@ export function TournamentResultsTable({
             <TableFooter className="bg-card border-t border-border">
               <TableRow className="hover:bg-transparent">
                 <TableCell
-                  colSpan={3}
+                  colSpan={5}
                   className="text-right font-bold uppercase tracking-wider text-sm"
                 >
                   Total Premiação:
@@ -117,7 +133,18 @@ export function TournamentResultsTable({
                   {result.player?.name ?? "—"}
                 </span>
               </div>
-              <span className="text-lg font-bold">{result.points} pts</span>
+              <span className="text-lg font-bold">{resultTotal(result)} pts</span>
+            </div>
+            <div className="pl-6 text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+              <span>
+                Pontuação: <span className="text-foreground">{result.points}</span>
+              </span>
+              <span>
+                Participação:{" "}
+                <span className="text-foreground">
+                  {result.participation_points ?? 0}
+                </span>
+              </span>
             </div>
             {Number(result.prize_won) > 0 && (
               <div className="pl-6 text-sm">

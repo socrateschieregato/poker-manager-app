@@ -3,6 +3,10 @@
 import { useEffect, useState, useTransition, use, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { saveResults } from "@/lib/actions/results";
+import {
+  getDefaultParticipationPoints,
+  getDefaultPositionPoints,
+} from "@/lib/scoring";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +37,7 @@ interface ResultRow {
   player_id: string;
   position: number;
   points: number;
+  participation_points: number;
   prize_won: number;
 }
 
@@ -85,6 +90,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
             player_id: r.player_id,
             position: r.position,
             points: r.points,
+            participation_points: r.participation_points ?? getDefaultParticipationPoints(),
             prize_won: Number(r.prize_won),
           }))
         );
@@ -102,7 +108,8 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         key: crypto.randomUUID(),
         player_id: "",
         position: nextPosition,
-        points: 0,
+        points: getDefaultPositionPoints(nextPosition),
+        participation_points: getDefaultParticipationPoints(),
         prize_won: getPrizeForPosition(nextPosition),
       },
     ]);
@@ -111,11 +118,16 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
   function removeRow(key: string) {
     const updated = rows.filter((r) => r.key !== key);
     setRows(
-      updated.map((r, i) => ({
-        ...r,
-        position: i + 1,
-        prize_won: r.prize_won,
-      }))
+      updated.map((r, i) => {
+        const position = i + 1;
+        return {
+          ...r,
+          position,
+          points: getDefaultPositionPoints(position),
+          participation_points: getDefaultParticipationPoints(),
+          prize_won: r.prize_won,
+        };
+      })
     );
   }
 
@@ -151,6 +163,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
           player_id: r.player_id,
           position: r.position,
           points: r.points,
+          participation_points: r.participation_points,
           prize_won: r.prize_won,
         }))
       );
@@ -247,7 +260,9 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
                     <TableRow className="border-border hover:bg-transparent">
                       <TableHead className="w-20 text-xs uppercase">Pos.</TableHead>
                       <TableHead className="text-xs uppercase">Jogador</TableHead>
-                      <TableHead className="w-28 text-xs uppercase">Pontos</TableHead>
+                      <TableHead className="w-28 text-xs uppercase">Pontuação</TableHead>
+                      <TableHead className="w-28 text-xs uppercase">Participação</TableHead>
+                      <TableHead className="w-20 text-xs uppercase">Total</TableHead>
                       <TableHead className="w-36 text-xs uppercase">Prêmio (R$)</TableHead>
                       <TableHead className="w-16"></TableHead>
                     </TableRow>
@@ -293,6 +308,24 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
                             }
                             className="bg-input border-border w-24"
                           />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={row.participation_points}
+                            onChange={(e) =>
+                              updateRow(
+                                row.key,
+                                "participation_points",
+                                parseInt(e.target.value) || 0
+                              )
+                            }
+                            className="bg-input border-border w-24"
+                          />
+                        </TableCell>
+                        <TableCell className="font-bold">
+                          {row.points + row.participation_points}
                         </TableCell>
                         <TableCell>
                           <Input
@@ -372,7 +405,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Pontos</Label>
+                        <Label className="text-xs text-muted-foreground">Pontuação</Label>
                         <Input
                           type="number"
                           min="0"
@@ -382,6 +415,28 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
                           }
                           className="bg-input border-border"
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Participação</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={row.participation_points}
+                          onChange={(e) =>
+                            updateRow(
+                              row.key,
+                              "participation_points",
+                              parseInt(e.target.value) || 0
+                            )
+                          }
+                          className="bg-input border-border"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Total</Label>
+                        <p className="h-9 flex items-center font-bold">
+                          {row.points + row.participation_points}
+                        </p>
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Prêmio (R$)</Label>
