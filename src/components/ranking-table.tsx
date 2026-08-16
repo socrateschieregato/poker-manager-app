@@ -11,13 +11,44 @@ import { PositionBadge } from "@/components/position-badge";
 import { formatCurrency, formatPoints } from "@/lib/utils";
 import type { RankingEntry } from "@/types/database";
 
+const FT_MAX = 8;
+const REPESCAGEM_MAX = 18;
+
+type RankingZone = "ft" | "repescagem" | null;
+
+function getRankingZone(position: number): RankingZone {
+  if (position <= FT_MAX) return "ft";
+  if (position <= REPESCAGEM_MAX) return "repescagem";
+  return null;
+}
+
+function getZoneRowClass(zone: RankingZone): string {
+  if (zone === "ft") {
+    return "bg-[#22C55E]/10 border-l-4 border-l-[#22C55E]";
+  }
+  if (zone === "repescagem") {
+    return "bg-[#F97316]/10 border-l-4 border-l-[#F97316]";
+  }
+  return "";
+}
+
+function getZoneLabel(zone: RankingZone): string | null {
+  if (zone === "ft") return "FT";
+  if (zone === "repescagem") return "REPESCAGEM";
+  return null;
+}
+
+function getZoneLabelClass(zone: RankingZone): string {
+  if (zone === "ft") return "text-[#22C55E]";
+  if (zone === "repescagem") return "text-[#F97316]";
+  return "";
+}
+
 interface RankingTableProps {
   ranking: RankingEntry[];
   title?: string;
   seasonPot?: number;
-  /** Quando definido, exibe apenas os primeiros N participantes (ex.: prévia na home). */
   previewLimit?: number;
-  /** URL da classificação completa (usada com `previewLimit` e botão "Ver mais"). */
   fullRankingHref?: string;
 }
 
@@ -37,21 +68,33 @@ export function RankingTable({
 
   return (
     <div className="w-full rounded-xl border border-border bg-card overflow-hidden">
-      <div className="px-6 py-4 border-b border-border flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-xl font-semibold italic tracking-wide">{title}</h2>
-        {seasonPot > 0 && (
-          <div className="flex items-center gap-2 rounded-lg bg-[#FACC15]/10 border border-[#FACC15]/30 px-4 py-1.5">
-            <span className="text-sm font-medium text-[#FACC15] uppercase tracking-wider">POT do Ranking:</span>
-            <span className="text-lg font-bold text-[#FACC15]">{formatCurrency(seasonPot)}</span>
-          </div>
-        )}
+      <div className="px-6 py-4 border-b border-border flex flex-col gap-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="text-xl font-semibold italic tracking-wide">{title}</h2>
+          {seasonPot > 0 && (
+            <div className="flex items-center gap-2 rounded-lg bg-[#FACC15]/10 border border-[#FACC15]/30 px-4 py-1.5">
+              <span className="text-sm font-medium text-[#FACC15] uppercase tracking-wider">POT do Ranking:</span>
+              <span className="text-lg font-bold text-[#FACC15]">{formatCurrency(seasonPot)}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-4 text-xs uppercase tracking-wider font-medium">
+          <span className="flex items-center gap-2 text-[#22C55E]">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#22C55E]" />
+            FT (1º–8º)
+          </span>
+          <span className="flex items-center gap-2 text-[#F97316]">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#F97316]" />
+            Repescagem (9º–18º)
+          </span>
+        </div>
       </div>
 
-      {/* Desktop */}
       <div className="hidden md:block overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="w-28 text-xs uppercase tracking-wider text-muted-foreground">Faixa</TableHead>
               <TableHead className="w-16 text-xs uppercase tracking-wider text-muted-foreground">Pos.</TableHead>
               <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">Nome</TableHead>
               <TableHead className="text-center text-xs uppercase tracking-wider text-muted-foreground">Pontos Totais</TableHead>
@@ -64,46 +107,58 @@ export function RankingTable({
           <TableBody>
             {displayedRanking.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                   Nenhum resultado cadastrado ainda.
                 </TableCell>
               </TableRow>
             )}
-            {displayedRanking.map((entry, index) => (
-              <TableRow
-                key={entry.player_id}
-                className="border-border hover:bg-white/[0.02] transition-colors"
-              >
-                <TableCell>
-                  <PositionBadge position={index + 1} />
-                </TableCell>
-                <TableCell className="font-medium text-[#38BDF8]">
-                  {entry.player_name}
-                </TableCell>
-                <TableCell className="text-center font-bold text-lg">
-                  {entry.total_points}
-                </TableCell>
-                <TableCell className="text-center text-muted-foreground">
-                  {entry.previous_points}
-                </TableCell>
-                <TableCell className="text-center">
-                  {entry.attendances}
-                </TableCell>
-                <TableCell className="text-center font-semibold">
-                  {entry.victories}
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className={Number(entry.points_today) > 0 ? "text-[#22C55E] font-medium" : "text-muted-foreground"}>
-                    {Number(entry.points_today) > 0 ? formatPoints(Number(entry.points_today)) : "0"}
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))}
+            {displayedRanking.map((entry, index) => {
+              const position = index + 1;
+              const zone = getRankingZone(position);
+              const zoneLabel = getZoneLabel(zone);
+
+              return (
+                <TableRow
+                  key={entry.player_id}
+                  className={`border-border transition-colors hover:bg-white/[0.02] ${getZoneRowClass(zone)}`}
+                >
+                  <TableCell>
+                    {zoneLabel && (
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${getZoneLabelClass(zone)}`}>
+                        {zoneLabel}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <PositionBadge position={position} />
+                  </TableCell>
+                  <TableCell className="font-medium text-[#38BDF8]">
+                    {entry.player_name}
+                  </TableCell>
+                  <TableCell className="text-center font-bold text-lg">
+                    {entry.total_points}
+                  </TableCell>
+                  <TableCell className="text-center text-muted-foreground">
+                    {entry.previous_points}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {entry.attendances}
+                  </TableCell>
+                  <TableCell className="text-center font-semibold">
+                    {entry.victories}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className={Number(entry.points_today) > 0 ? "text-[#22C55E] font-medium" : "text-muted-foreground"}>
+                      {Number(entry.points_today) > 0 ? formatPoints(Number(entry.points_today)) : "0"}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
 
-      {/* Mobile */}
       <div className="md:hidden divide-y divide-border">
         {seasonPot > 0 && (
           <div className="p-4 flex justify-between items-center bg-[#FACC15]/5">
@@ -116,29 +171,45 @@ export function RankingTable({
             Nenhum resultado cadastrado ainda.
           </div>
         )}
-        {displayedRanking.map((entry, index) => (
-          <div key={entry.player_id} className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <PositionBadge position={index + 1} />
-                <span className="font-medium text-[#38BDF8]">{entry.player_name}</span>
+        {displayedRanking.map((entry, index) => {
+          const position = index + 1;
+          const zone = getRankingZone(position);
+          const zoneLabel = getZoneLabel(zone);
+
+          return (
+            <div
+              key={entry.player_id}
+              className={`p-4 space-y-2 ${getZoneRowClass(zone)}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <PositionBadge position={position} />
+                  <span className="font-medium text-[#38BDF8] truncate">{entry.player_name}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {zoneLabel && (
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${getZoneLabelClass(zone)}`}>
+                      {zoneLabel}
+                    </span>
+                  )}
+                  <span className="text-xl font-bold">{entry.total_points} pts</span>
+                </div>
               </div>
-              <span className="text-xl font-bold">{entry.total_points} pts</span>
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm pl-6">
-              <div className="text-muted-foreground">Anterior:</div>
-              <div>{entry.previous_points}</div>
-              <div className="text-muted-foreground">Presenças:</div>
-              <div>{entry.attendances}</div>
-              <div className="text-muted-foreground">Vitórias:</div>
-              <div className="font-semibold">{entry.victories}</div>
-              <div className="text-muted-foreground">Pontos no dia:</div>
-              <div className={Number(entry.points_today) > 0 ? "text-[#22C55E] font-medium" : ""}>
-                {Number(entry.points_today) > 0 ? formatPoints(Number(entry.points_today)) : "0"}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm pl-6">
+                <div className="text-muted-foreground">Anterior:</div>
+                <div>{entry.previous_points}</div>
+                <div className="text-muted-foreground">Presenças:</div>
+                <div>{entry.attendances}</div>
+                <div className="text-muted-foreground">Vitórias:</div>
+                <div className="font-semibold">{entry.victories}</div>
+                <div className="text-muted-foreground">Pontos no dia:</div>
+                <div className={Number(entry.points_today) > 0 ? "text-[#22C55E] font-medium" : ""}>
+                  {Number(entry.points_today) > 0 ? formatPoints(Number(entry.points_today)) : "0"}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {showSeeMore && (
